@@ -6,5 +6,6 @@ Convert ParticipateDB web site to a Git repository of YAML files.
 ## Usage
 
 ```bash
-./nuit_debout_to_yaml.py yaml/
+./harvest_participatedb.py html/
+./participatedb_to_yaml.py html/ ../participatedb-yaml/
 ```
