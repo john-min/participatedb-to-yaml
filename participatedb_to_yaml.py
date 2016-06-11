@@ -27,6 +27,7 @@ import os
 import sys
 
 import lxml.html
+from slugify import slugify
 import yaml
 
 
@@ -135,13 +136,13 @@ def add_tools(entry_type, entry_id, h2_element):
 def create_entry(entry_type, entry_id, entry_div_element):
     assert len(entry_div_element) == 3, "{} {}".format(entry_type, entry_id)
     entry = collections.OrderedDict()
-    entry['name'] = entry_div_element.xpath('./h1')[0].text
+    entry['Name'] = entry_div_element.xpath('./h1')[0].text
     description_element = entry_div_element.xpath('./div')[-1]
     description = lxml.html.tostring(description_element, encoding = 'unicode').strip()
     assert description.startswith('<div>')
     assert description.endswith('</div>')
     description = description[len('<div>'):-1 - len('</div>')]
-    entry['description'] = description
+    entry['Description'] = description
     return entry
 
 
@@ -187,7 +188,8 @@ def main():
                             project[block_title] = ids
                     else:
                         raise AssertionError('Unkwown title "{}" in project {}'.format(block_title, filename))
-            with open(os.path.join(yaml_dir, '{}.yaml'.format(entry_id)), 'w') as yaml_file:
+            slug = slugify(project['Name'])
+            with open(os.path.join(yaml_dir, '{}.yaml'.format(slug)), 'w') as yaml_file:
                 yaml.dump(project, yaml_file, allow_unicode = True, default_flow_style = False,
                     indent = 2, width = 120)
 
@@ -221,7 +223,8 @@ def main():
                             reference[block_title] = ids
                     else:
                         raise AssertionError('Unkwown title "{}" in reference {}'.format(block_title, entry_id))
-            with open(os.path.join(yaml_dir, '{}.yaml'.format(entry_id)), 'w') as yaml_file:
+            slug = slugify(reference['Name'])
+            with open(os.path.join(yaml_dir, '{}.yaml'.format(slug)), 'w') as yaml_file:
                 yaml.dump(reference, yaml_file, allow_unicode = True, default_flow_style = False,
                     indent = 2, width = 120)
 
@@ -267,7 +270,8 @@ def main():
                                 next_element.tag, entry_id))
                     else:
                         raise AssertionError('Unkwown title "{}" in tool {}'.format(block_title, entry_id))
-            with open(os.path.join(yaml_dir, '{}.yaml'.format(entry_id)), 'w') as yaml_file:
+            slug = slugify(tool['Name'])
+            with open(os.path.join(yaml_dir, '{}.yaml'.format(slug)), 'w') as yaml_file:
                 yaml.dump(tool, yaml_file, allow_unicode = True, default_flow_style = False,
                     indent = 2, width = 120)
 
