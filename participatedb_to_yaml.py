@@ -73,7 +73,11 @@ def add_additional_information(entry_type, entry_id, entry, ul_element):
             for a_element in li_element[1:]:
                 assert a_element.tag == 'a', 'Unkwown field format "{}" in {} {}'.format(
                     lxml.html.tostring(li_element, encoding = 'unicode'), entry_type, entry_id)
-                if key == 'Country':
+                if key == 'Category':
+                    value = a_element.text
+                elif key == 'category':
+                    value = a_element.text
+                elif key == 'Country':
                     value = a_element.text
                 else:
                     assert a_element.attrib['href'] == a_element.text, 'Unkwown field format "{}" in {} {}'.format(
@@ -92,7 +96,7 @@ def add_projects(entry_type, entry_id, h2_element):
         ul_element.tag, entry_type, entry_id)
     projects = []
     for li_element in ul_element:
-        assert len(li_element) == 1, 'Invalid length for project in {} {}'.format(a_element.tag, entry_type, entry_id)
+        assert len(li_element) == 1, 'Invalid length for project in {} {}'.format(entry_type, entry_id)
         a_element = li_element[0]
         assert a_element.tag == 'a', 'Unkwown tag {} for project in {} {}'.format(a_element.tag, entry_type, entry_id)
         project = a_element.attrib['href']
@@ -106,7 +110,7 @@ def add_references(entry_type, entry_id, entry, ul_element):
         ul_element.tag, entry_type, entry_id)
     references = []
     for li_element in ul_element:
-        assert len(li_element) == 1, 'Invalid length for reference in {} {}'.format(a_element.tag, entry_type, entry_id)
+        assert len(li_element) == 1, 'Invalid length for reference in {} {}'.format(entry_type, entry_id)
         a_element = li_element[0]
         assert a_element.tag == 'a', 'Unkwown tag {} for reference in {} {}'.format(a_element.tag, entry_type, entry_id)
         reference = a_element.attrib['href']
@@ -125,12 +129,13 @@ def add_tools(entry_type, entry_id, h2_element):
         ul_element.tag, entry_type, entry_id)
     tools = []
     for li_element in ul_element:
-        assert len(li_element) == 1, 'Invalid length for tool in {} {}'.format(a_element.tag, entry_type, entry_id)
+        assert len(li_element) == 1, 'Invalid length for tool in {} {}'.format(entry_type, entry_id)
         a_element = li_element[0]
         assert a_element.tag == 'a', 'Unkwown tag {} for tool in {} {}'.format(a_element.tag, entry_type, entry_id)
         tool = a_element.attrib['href']
         assert tool.startswith('/tools/')
         tools.append(int(tool.split('/')[-1]))
+    return tools
 
 
 def create_entry(entry_type, entry_id, entry_div_element):
@@ -261,7 +266,7 @@ def main():
                     elif block_title == 'Slice & Dice':
                         next_element = h2_element.getnext()
                         if next_element.tag == 'ul':
-                            pass
+                            add_additional_information('tool', entry_id, tool, next_element)
                         elif next_element.tag == 'p':
                             assert next_element.text == 'No categories have been assigned yet.', \
                                 'Unkwown text {} for next element in tool {}'.format(next_element.text, entry_id)
