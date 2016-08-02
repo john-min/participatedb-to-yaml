@@ -141,6 +141,7 @@ def add_tools(entry_type, entry_id, h2_element):
 def create_entry(entry_type, entry_id, entry_div_element):
     assert len(entry_div_element) == 3, "{} {}".format(entry_type, entry_id)
     entry = collections.OrderedDict()
+    entry['ID'] = entry_id
     entry['Name'] = entry_div_element.xpath('./h1')[0].text
     description_element = entry_div_element.xpath('./div')[-1]
     description = lxml.html.tostring(description_element, encoding = 'unicode').strip()
