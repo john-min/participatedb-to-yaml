@@ -30,6 +30,8 @@ import sys
 import urllib.parse
 import urllib.request
 
+import lxml.html
+
 
 def main():
     parser = argparse.ArgumentParser()
