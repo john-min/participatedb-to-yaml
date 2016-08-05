@@ -105,7 +105,7 @@ def add_projects(entry_type, entry_id, h2_element):
     return projects
 
 
-def add_references(entry_type, entry_id, entry, ul_element):
+def add_references(entry_type, entry_id, ul_element):
     assert ul_element.tag == 'ul', 'Unkwown tag {} for ul element in {} {}'.format(
         ul_element.tag, entry_type, entry_id)
     references = []
@@ -116,8 +116,7 @@ def add_references(entry_type, entry_id, entry, ul_element):
         reference = a_element.attrib['href']
         assert reference.startswith('/references/')
         references.append(int(reference.split('/')[-1]))
-    if references:
-        entry['References'] = references
+    return references
 
 
 def add_tools(entry_type, entry_id, h2_element):
@@ -162,10 +161,9 @@ def main():
     if not os.path.exists(args.yaml_dir):
         os.makedirs(args.yaml_dir)
 
+    project_slug_by_id = {}
+    projects = []
     projects_dir = os.path.join(args.pages_dir, 'projects')
-    yaml_dir = os.path.join(args.yaml_dir, 'projects')
-    if not os.path.exists(yaml_dir):
-        os.makedirs(yaml_dir)
     for filename in os.listdir(projects_dir):
         if not filename.endswith('.html'):
             continue
@@ -187,7 +185,9 @@ def main():
                         assert p_element.text.startswith('Additional information'), \
                             'Invalid text "{}" in references of project {}'.format(p_element.text, entry_id)
                         ul_element = p_element.getnext()
-                        add_references('project', entry_id, project, ul_element)
+                        ids = add_references('project', entry_id, ul_element)
+                        if ids:
+                            project[block_title] = ids
                     elif block_title == 'Tools used':
                         ids = add_tools('project', entry_id, h2_element)
                         if ids:
@@ -195,14 +195,12 @@ def main():
                     else:
                         raise AssertionError('Unkwown title "{}" in project {}'.format(block_title, filename))
             slug = slugify(project['Name'])
-            with open(os.path.join(yaml_dir, '{}.yaml'.format(slug)), 'w') as yaml_file:
-                yaml.dump(project, yaml_file, allow_unicode = True, default_flow_style = False,
-                    indent = 2, width = 120)
+            projects.append(project)
+            project_slug_by_id[entry_id] = slug
 
+    reference_slug_by_id = {}
+    references = []
     references_dir = os.path.join(args.pages_dir, 'references')
-    yaml_dir = os.path.join(args.yaml_dir, 'references')
-    if not os.path.exists(yaml_dir):
-        os.makedirs(yaml_dir)
     for filename in os.listdir(references_dir):
         if not filename.endswith('.html'):
             continue
@@ -230,14 +228,12 @@ def main():
                     else:
                         raise AssertionError('Unkwown title "{}" in reference {}'.format(block_title, entry_id))
             slug = slugify(reference['Name'])
-            with open(os.path.join(yaml_dir, '{}.yaml'.format(slug)), 'w') as yaml_file:
-                yaml.dump(reference, yaml_file, allow_unicode = True, default_flow_style = False,
-                    indent = 2, width = 120)
+            references.append(reference)
+            reference_slug_by_id[entry_id] = slug
 
+    tool_slug_by_id = {}
+    tools = []
     tools_dir = os.path.join(args.pages_dir, 'tools')
-    yaml_dir = os.path.join(args.yaml_dir, 'tools')
-    if not os.path.exists(yaml_dir):
-        os.makedirs(yaml_dir)
     for filename in os.listdir(tools_dir):
         if not filename.endswith('.html'):
             continue
@@ -263,7 +259,9 @@ def main():
                         assert p_element.text.startswith('Additional information'), \
                             'Invalid text "{}" in references of tool {}'.format(p_element.text, entry_id)
                         ul_element = p_element.getnext()
-                        add_references('tool', entry_id, tool, ul_element)
+                        ids = add_references('tool', entry_id, ul_element)
+                        if ids:
+                            tool[block_title] = ids
                     elif block_title == 'Slice & Dice':
                         next_element = h2_element.getnext()
                         if next_element.tag == 'ul':
@@ -277,9 +275,65 @@ def main():
                     else:
                         raise AssertionError('Unkwown title "{}" in tool {}'.format(block_title, entry_id))
             slug = slugify(tool['Name'])
-            with open(os.path.join(yaml_dir, '{}.yaml'.format(slug)), 'w') as yaml_file:
-                yaml.dump(tool, yaml_file, allow_unicode = True, default_flow_style = False,
-                    indent = 2, width = 120)
+            tools.append(tool)
+            tool_slug_by_id[entry_id] = slug
+
+    yaml_dir = os.path.join(args.yaml_dir, 'projects')
+    if not os.path.exists(yaml_dir):
+        os.makedirs(yaml_dir)
+    for project in projects:
+        ids = project.get('References')
+        if ids:
+            project['References'] = [
+                reference_slug_by_id[id]
+                for id in ids
+                ]
+        ids = project.get('Tools used')
+        if ids:
+            project['Tools used'] = [
+                tool_slug_by_id[id]
+                for id in ids
+                ]
+        with open(os.path.join(yaml_dir, '{}.yaml'.format(project_slug_by_id[project['ID']])), 'w') as yaml_file:
+            yaml.dump(project, yaml_file, allow_unicode = True, default_flow_style = False,  indent = 2, width = 120)
+
+    yaml_dir = os.path.join(args.yaml_dir, 'references')
+    if not os.path.exists(yaml_dir):
+        os.makedirs(yaml_dir)
+    for reference in references:
+        ids = reference.get('Related projects')
+        if ids:
+            reference['Related projects'] = [
+                project_slug_by_id[id]
+                for id in ids
+                ]
+        ids = reference.get('Related tools')
+        if ids:
+            reference['Related tools'] = [
+                tool_slug_by_id[id]
+                for id in ids
+                ]
+        with open(os.path.join(yaml_dir, '{}.yaml'.format(reference_slug_by_id[reference['ID']])), 'w') as yaml_file:
+            yaml.dump(reference, yaml_file, allow_unicode = True, default_flow_style = False, indent = 2, width = 120)
+
+    yaml_dir = os.path.join(args.yaml_dir, 'tools')
+    if not os.path.exists(yaml_dir):
+        os.makedirs(yaml_dir)
+    for tool in tools:
+        ids = tool.get('Projects')
+        if ids:
+            tool['Projects'] = [
+                project_slug_by_id[id]
+                for id in ids
+                ]
+        ids = tool.get('References')
+        if ids:
+            tool['References'] = [
+                reference_slug_by_id[id]
+                for id in ids
+                ]
+        with open(os.path.join(yaml_dir, '{}.yaml'.format(tool_slug_by_id[tool['ID']])), 'w') as yaml_file:
+            yaml.dump(tool, yaml_file, allow_unicode = True, default_flow_style = False, indent = 2, width = 120)
 
     return 0
 
